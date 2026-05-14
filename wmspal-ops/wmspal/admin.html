@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SalPal Admin</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="assets/storage.js" defer></script>
+    <script src="assets/admin.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="index.html" aria-label="SalPal home">
+          <div class="brand-card">
+            <img src="assets/salpal-logo.png" alt="SalPal">
+          </div>
+        </a>
+        <nav class="nav-list" aria-label="Admin navigation">
+          <button class="nav-item active" type="button" data-section="users"><span>Users</span><small>Team access</small></button>
+          <button class="nav-item" type="button" data-section="companies"><span>Companies</span><small>Address book</small></button>
+          <button class="nav-item" type="button" data-section="tasks"><span>Tasks</span><small>Orders and jobs</small></button>
+          <button class="nav-item" type="button" data-section="calendar"><span>Calendar</span><small>Driver schedule</small></button>
+        </nav>
+        <a class="mobile-link" href="driver.html">Open driver app →</a>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">SalPal Ops</p>
+            <h1 id="sectionTitle">Users</h1>
+          </div>
+          <div class="topbar-actions">
+            <div class="sync-indicator" id="syncIndicator" title="Google Sheets sync status">⟳ Connecting...</div>
+            <div class="admin-identity">
+              <span class="status-dot"></span>
+              <span id="adminName"></span>
+            </div>
+          </div>
+        </header>
+
+        <!-- Users -->
+        <section class="content-section active" id="usersSection">
+          <div class="section-header">
+            <div><h2>Users</h2><p class="muted">Manage admin and driver access.</p></div>
+            <button class="primary-button" type="button" id="resetUserForm">Add user</button>
+          </div>
+          <section class="surface list-surface">
+            <div class="surface-header">
+              <div><h3>All users</h3><p class="muted" id="usersSummary">0 users</p></div>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table" id="usersTable"></table>
+            </div>
+          </section>
+        </section>
+
+        <!-- Companies -->
+        <section class="content-section" id="companiesSection">
+          <div class="section-header">
+            <div><h2>Companies</h2><p class="muted">Address book used in task creation.</p></div>
+            <button class="primary-button" type="button" id="resetCompanyForm">Add company</button>
+          </div>
+          <section class="surface list-surface">
+            <div class="surface-header">
+              <div><h3>All companies</h3><p class="muted" id="companiesSummary">0 companies</p></div>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table" id="companiesTable"></table>
+            </div>
+          </section>
+        </section>
+
+        <!-- Tasks -->
+        <section class="content-section" id="tasksSection">
+          <div class="section-header">
+            <div><h2>Tasks</h2><p class="muted">Create, assign, and manage delivery and collection tasks.</p></div>
+            <div style="display:flex;gap:0.6rem;align-items:center;">
+              <button class="ghost-button" type="button" id="exportTasksBtn">Export to Excel</button>
+              <button class="primary-button" type="button" id="resetTaskForm">Create task</button>
+            </div>
+          </div>
+          <div id="taskFiltersWrap"></div>
+          <section class="surface list-surface" style="margin-top:0.85rem;">
+            <div class="surface-header">
+              <div><h3>Task list</h3><p class="muted" id="tasksSummary">0 tasks</p></div>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table" id="tasksTable"></table>
+            </div>
+          </section>
+        </section>
+
+        <!-- Calendar -->
+        <section class="content-section" id="calendarSection">
+          <div class="section-header">
+            <div><h2>Driver calendar</h2><p class="muted">Per-date view — jobs grouped by driver.</p></div>
+          </div>
+          <div id="calendarContainer"></div>
+        </section>
+      </main>
+    </div>
+
+    <!-- User Dialog -->
+    <dialog class="modal" id="userDialog">
+      <div class="modal-panel">
+        <div class="modal-header">
+          <div><p class="eyebrow">User access</p><h2 id="userFormHeading">Create user</h2></div>
+          <button class="icon-button" type="button" data-close-modal>✕</button>
+        </div>
+        <form id="userForm" class="stacked-form" novalidate>
+          <input type="hidden" id="userId">
+          <div class="form-grid">
+            <label class="required">First name<input id="firstName" name="firstName" placeholder="Mira" required></label>
+            <label class="required">Last name<input id="lastName" name="lastName" placeholder="Patel" required></label>
+            <label class="required">Username<input id="username" name="username" placeholder="mira.patel" required></label>
+            <label class="required">Role
+              <select id="role" name="role" required>
+                <option value="Admin">Admin</option>
+                <option value="Driver">Driver</option>
+              </select>
+            </label>
+            <label class="required">Password<input id="password" name="password" type="password" placeholder="Min 6 characters"></label>
+            <label class="required">Confirm password<input id="confirmPassword" name="confirmPassword" type="password" placeholder="Repeat password"></label>
+          </div>
+          <p class="helper-text">Leave password blank when editing to keep the current password.</p>
+          <p class="form-error" id="userFormError" role="alert"></p>
+          <div class="form-actions modal-actions">
+            <button class="ghost-button" type="button" id="cancelUserEdit">Cancel</button>
+            <button class="primary-button" type="submit">Save user</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Reset Password Dialog -->
+    <dialog class="modal" id="resetPwDialog">
+      <div class="modal-panel">
+        <div class="modal-header">
+          <div><p class="eyebrow">Security</p><h2 id="resetPwHeading">Reset password</h2></div>
+          <button class="icon-button" type="button" data-close-modal>✕</button>
+        </div>
+        <form id="resetPwForm" class="stacked-form" novalidate>
+          <input type="hidden" id="resetPwUserId">
+          <label class="required">New password<input id="newPassword" name="newPassword" type="password" placeholder="Min 6 characters" required></label>
+          <label class="required">Confirm new password<input id="confirmNewPassword" name="confirmNewPassword" type="password" placeholder="Repeat password" required></label>
+          <p class="form-error" id="resetPwError" role="alert"></p>
+          <div class="form-actions modal-actions">
+            <button class="ghost-button" type="button" id="cancelResetPw">Cancel</button>
+            <button class="primary-button" type="submit">Reset password</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Company Dialog -->
+    <dialog class="modal" id="companyDialog">
+      <div class="modal-panel">
+        <div class="modal-header">
+          <div><p class="eyebrow">Address book</p><h2 id="companyFormHeading">Add company</h2></div>
+          <button class="icon-button" type="button" data-close-modal>✕</button>
+        </div>
+        <form id="companyForm" class="stacked-form" novalidate>
+          <input type="hidden" id="companyFormId">
+          <div class="form-grid">
+            <label class="required" style="grid-column:1/-1">Company name<input id="companyFormName" name="name" placeholder="Greenmarket Foods" required></label>
+            <label>Address <span class="optional-text">optional</span><input id="companyFormAddress" name="address" placeholder="14 Porter Street"></label>
+            <label class="required">City<input id="companyFormCity" name="city" placeholder="Birmingham" required></label>
+            <label class="required">Postcode<input id="companyFormPostcode" name="postcode" placeholder="B5 6AB" required></label>
+          </div>
+          <p class="form-error" id="companyFormError" role="alert"></p>
+          <div class="form-actions modal-actions">
+            <button class="danger-button" type="button" id="deleteCompanyButton" hidden>Delete</button>
+            <button class="ghost-button" type="button" id="cancelCompanyEdit">Cancel</button>
+            <button class="primary-button" type="submit">Save company</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Task Dialog -->
+    <dialog class="modal wide-modal" id="taskDialog">
+      <div class="modal-panel">
+        <div class="modal-header">
+          <div><p class="eyebrow">Task order</p><h2 id="taskFormHeading">Create task</h2></div>
+          <button class="icon-button" type="button" data-close-modal>✕</button>
+        </div>
+        <form id="taskForm" class="stacked-form" novalidate>
+          <input type="hidden" id="taskId">
+          <section class="form-section">
+            <h3>Order details</h3>
+            <div class="form-grid">
+              <label>AWB<input id="awb" name="awb" placeholder="Auto-generated" readonly style="opacity:0.5;cursor:not-allowed;"></label>
+              <label>Order reference <span class="optional-text">optional</span><input id="orderReference" name="orderReference" placeholder="ORD-48219"></label>
+              <label class="required">Order date<input id="orderDate" name="orderDate" type="date" required></label>
+              <label class="required">Delivery date<input id="deliveryDate" name="deliveryDate" type="date" required></label>
+              <label>Delivery time from <span class="optional-text">optional</span><input id="deliveryTimeFrom" name="deliveryTimeFrom" type="time"></label>
+              <label>Delivery time to <span class="optional-text">optional</span><input id="deliveryTimeTo" name="deliveryTimeTo" type="time"></label>
+              <label>Driver <span class="optional-text">optional</span><select id="taskDriverId" name="driverId"></select></label>
+              <label class="required">Type
+                <select id="taskType" name="type" required>
+                  <option value="">— Select type —</option>
+                  <option value="Delivery">Delivery</option>
+                  <option value="Collection">Collection</option>
+                </select>
+              </label>
+              <label class="required">Qty (pallets)<input id="qty" name="qty" type="number" min="1" placeholder="e.g. 4" required></label>
+            </div>
+          </section>
+          <fieldset class="address-fieldset">
+            <legend id="addressLegend">Address</legend>
+            <p class="helper-text" id="addressHelper">Type to search or add a new company.</p>
+            <input type="hidden" id="companyId" name="companyId">
+            <label class="required">Company
+              <div class="company-search-wrap">
+                <div style="display:flex;gap:0.5rem;align-items:flex-start;">
+                  <div style="flex:1;position:relative;">
+                    <input id="companySearch" name="companySearch" placeholder="Type to search companies..." autocomplete="off" required>
+                    <div class="company-dropdown" id="companyDropdown"></div>
+                  </div>
+                  <button class="ghost-button" type="button" id="editSelectedCompany" style="min-height:44px;padding:0.5rem 0.75rem;font-size:0.8rem;" hidden>Edit</button>
+                </div>
+              </div>
+            </label>
+            <div class="form-grid">
+              <label>Address <span class="optional-text">optional</span><input id="companyAddress" name="companyAddress" placeholder="14 Porter Street"></label>
+              <label class="required">City<input id="city" name="city" placeholder="Birmingham" required></label>
+              <label class="required">Postcode<input id="postcode" name="postcode" placeholder="B5 6AB" required></label>
+            </div>
+          </fieldset>
+          <label>Notes to the driver <span class="optional-text">optional</span>
+            <textarea id="driverNotes" name="driverNotes" rows="3" placeholder="Gate codes, parking notes..."></textarea>
+          </label>
+          <p class="form-error" id="taskFormError" role="alert"></p>
+          <div class="form-actions modal-actions">
+            <button class="danger-button" type="button" id="deleteTaskButton" hidden>Delete task</button>
+            <button class="ghost-button" type="button" id="cancelTaskEdit">Cancel</button>
+            <button class="primary-button" type="submit">Save task</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Task View Dialog -->
+    <dialog class="modal wide-modal" id="taskViewDialog">
+      <div class="modal-panel">
+        <div class="modal-header">
+          <div><p class="eyebrow">Task detail</p><h2 id="taskViewTitle">Task</h2></div>
+          <button class="icon-button" type="button" data-close-modal>✕</button>
+        </div>
+        <div id="taskDetailContent" class="task-detail-grid"></div>
+        <section class="timeline-section">
+          <div class="surface-header"><div><h3>Timeline</h3><p class="muted">Creation, edits, and proof events.</p></div></div>
+          <div id="taskTimeline" class="timeline"></div>
+        </section>
+      </div>
+    </dialog>
+
+    <!-- Date Picker Dialog -->
+    <dialog class="modal wide-modal" id="datePickerDialog">
+      <div class="modal-panel">
+        <div class="modal-header">
+          <div><p class="eyebrow">Filter</p><h2>Select date range</h2></div>
+          <button class="icon-button" type="button" data-close-modal>✕</button>
+        </div>
+        <div id="datePickerContent"></div>
+        <div class="form-actions modal-actions" style="margin-top:1rem;">
+          <button class="ghost-button" type="button" id="datePickerCancel">Cancel</button>
+          <button class="primary-button" type="button" id="datePickerOk">OK</button>
+        </div>
+      </div>
+    </dialog>
+  </body>
+</html>

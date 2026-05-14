@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SalPal Driver</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="assets/storage.js" defer></script>
+    <script src="assets/driver.js" defer></script>
+  </head>
+  <body class="driver-body">
+    <main class="mobile-shell">
+      <header class="mobile-topbar">
+        <a class="mobile-logo" href="index.html" aria-label="SalPal home">
+          <img src="assets/salpal-logo.png" alt="SalPal">
+        </a>
+        <div style="display:flex;align-items:center;gap:0.6rem;">
+          <div class="driver-profile">
+            <span id="driverInitials">--</span>
+            <div>
+              <small>Driver</small>
+              <strong id="driverName">Not logged in</strong>
+            </div>
+          </div>
+          <button class="ghost-button" type="button" id="logoutBtn" hidden style="min-height:34px;padding:0.38rem 0.7rem;font-size:0.78rem;border-radius:999px;">Log out</button>
+        </div>
+      </header>
+
+      <!-- Login View -->
+      <section class="mobile-view active" id="loginView">
+        <div style="display:grid;place-items:center;min-height:calc(100vh - 120px);">
+          <div style="width:100%;max-width:360px;">
+            <div style="text-align:center;margin-bottom:1.5rem;">
+              <p class="eyebrow">Driver login</p>
+              <h1 style="font-size:1.8rem;margin-top:0.3rem;">Sign in</h1>
+              <p class="muted" style="margin-top:0.5rem;font-size:0.9rem;">Enter your credentials to view your tasks.</p>
+            </div>
+            <form id="loginForm" class="stacked-form" novalidate>
+              <label class="required">
+                Username
+                <input id="loginUsername" name="username" autocomplete="username" placeholder="your.username" required>
+              </label>
+              <label class="required">
+                Password
+                <input id="loginPassword" name="password" type="password" autocomplete="current-password" placeholder="Password" required>
+              </label>
+              <p class="form-error" id="loginError" role="alert"></p>
+              <button class="primary-button full-width large-tap" type="submit">Sign in</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- Task List View -->
+      <section class="mobile-view" id="taskListView">
+        <div class="mobile-heading">
+          <div>
+            <p class="eyebrow">My tasks</p>
+            <h1>Tasks</h1>
+          </div>
+          <span class="count-pill" id="driverTaskCount">0</span>
+        </div>
+
+        <div class="chip-row" role="tablist" aria-label="View">
+          <button class="chip driver-tab-btn active" type="button" data-tab="today">Today</button>
+          <button class="chip driver-tab-btn" type="button" data-tab="upcoming">Upcoming</button>
+        </div>
+
+        <div class="mobile-metrics">
+          <div><span id="openTaskCount">0</span><small>Open</small></div>
+          <div><span id="inprogressTaskCount">0</span><small>In Progress</small></div>
+          <div><span id="completedTaskCount">0</span><small>Done</small></div>
+        </div>
+
+        <div class="chip-row" role="tablist" aria-label="Task status filter">
+          <button class="chip active" type="button" data-mobile-filter="Open">Open</button>
+          <button class="chip" type="button" data-mobile-filter="In Progress">In Progress</button>
+          <button class="chip" type="button" data-mobile-filter="Completed">Completed</button>
+          <button class="chip" type="button" data-mobile-filter="All">All</button>
+        </div>
+
+        <div class="task-cards" id="driverTaskList"></div>
+      </section>
+
+      <!-- Task Detail View -->
+      <section class="mobile-view" id="taskDetailView" aria-live="polite">
+        <button class="back-button" type="button" id="backToTasks">← Back to tasks</button>
+        <div class="mobile-detail" id="taskDetailPanel"></div>
+      </section>
+
+      <!-- Proof View -->
+      <section class="mobile-view" id="proofView" aria-live="polite">
+        <button class="back-button" type="button" id="backToDetail">← Back to task</button>
+        <section class="proof-panel inline-proof" id="proofPanel">
+          <div class="proof-header">
+            <div>
+              <p class="eyebrow">Proof of delivery</p>
+              <h2 id="proofTitle">Complete task</h2>
+            </div>
+          </div>
+          <form id="proofForm" class="stacked-form" novalidate>
+            <label>
+              Attachment upload <span class="optional-text">optional</span>
+              <input id="proofAttachment" type="file">
+              <span class="helper-text">Upload a photo, document, or other proof file.</span>
+            </label>
+            <label class="required">
+              Recipient name
+              <input id="proofName" placeholder="Name of person on site" required>
+            </label>
+            <label class="required">
+              Company name
+              <input id="proofCompany" placeholder="Company name" required>
+            </label>
+            <div>
+              <div class="canvas-label required">Signature</div>
+              <canvas id="signatureCanvas" width="360" height="180"></canvas>
+              <div class="form-actions compact" style="margin-top:0.5rem;">
+                <button class="ghost-button" type="button" id="clearSignature">Clear signature</button>
+              </div>
+            </div>
+            <p class="form-error" id="proofError" role="alert"></p>
+            <button class="primary-button full-width large-tap" type="submit">Submit proof</button>
+          </form>
+        </section>
+      </section>
+
+      <!-- Success View -->
+      <section class="mobile-view" id="successView" aria-live="polite">
+        <div class="success-panel">
+          <div class="success-mark">✓</div>
+          <p class="eyebrow">Completed</p>
+          <h1>Proof submitted</h1>
+          <p class="muted" id="successText">The task has been marked as completed.</p>
+          <button class="primary-button full-width large-tap" type="button" id="returnToTasks">Back to tasks</button>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
