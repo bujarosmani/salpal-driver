@@ -16,11 +16,14 @@
     syncTimeout = setTimeout(async () => {
       notifySyncStatus("syncing");
       try {
-        const json = encodeURIComponent(JSON.stringify(state));
-        const url = `${GS_URL}?action=save&data=${json}`;
-        await fetch(url, { method: "GET", mode: "no-cors" });
-        // no-cors means we can't read the response, but if no error thrown it worked
-        notifySyncStatus("ok");
+        const res = await fetch(GS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ action: "save", data: state }),
+        });
+        const json = await res.json();
+        if (json.ok) notifySyncStatus("ok");
+        else notifySyncStatus("error", json.error);
       } catch (err) {
         notifySyncStatus("error", err.message);
       }

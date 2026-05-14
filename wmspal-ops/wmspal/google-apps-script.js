@@ -1,5 +1,5 @@
-// SalPal Driver — Google Apps Script Backend v2
-// Replace your existing script with this entire file
+// SalPal Driver — Google Apps Script Backend v3
+// Replace your existing script with this, save, and redeploy as NEW VERSION
 
 const SHEET_ID = "1vh8a4nIUdwvGrO5ys0by2935-q6D174pRGJNBX_iRjg";
 const SHEET_NAME = "data";
@@ -14,31 +14,43 @@ function getSheet() {
   return sheet;
 }
 
+// Handle all requests - both GET and POST with CORS headers
 function doGet(e) {
+  const action = e.parameter.action;
+  let result;
   try {
-    const action = e.parameter.action;
-    if (action === "ping") return respond({ ok: true });
-    if (action === "load") return respond(loadData());
-    if (action === "save") {
+    if (action === "ping") result = { ok: true };
+    else if (action === "load") result = loadData();
+    else if (action === "save") {
       const raw = e.parameter.data;
-      if (!raw) return respond({ error: "No data provided" });
       const data = JSON.parse(decodeURIComponent(raw));
-      return respond(saveData(data));
+      result = saveData(data);
+    } else {
+      result = { error: "Unknown action" };
     }
-    return respond({ error: "Unknown action" });
   } catch (err) {
-    return respond({ error: err.message });
+    result = { error: err.message };
   }
+  return buildResponse(result);
 }
 
 function doPost(e) {
+  let result;
   try {
     const body = JSON.parse(e.postData.contents);
-    if (body.action === "save") return respond(saveData(body.data));
-    return respond({ error: "Unknown action" });
+    if (body.action === "save") result = saveData(body.data);
+    else if (body.action === "load") result = loadData();
+    else result = { error: "Unknown action" };
   } catch (err) {
-    return respond({ error: err.message });
+    result = { error: err.message };
   }
+  return buildResponse(result);
+}
+
+function buildResponse(data) {
+  const output = ContentService.createTextOutput(JSON.stringify(data));
+  output.setMimeType(ContentService.MimeType.JSON);
+  return output;
 }
 
 function loadData() {
@@ -68,10 +80,4 @@ function saveData(data) {
   }
   sheet.appendRow(["state", json, now]);
   return { ok: true, updated_at: now };
-}
-
-function respond(data) {
-  const output = ContentService.createTextOutput(JSON.stringify(data));
-  output.setMimeType(ContentService.MimeType.JSON);
-  return output;
 }
