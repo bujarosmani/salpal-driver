@@ -1,43 +1,71 @@
 (function () {
   const STORAGE_KEY = "wmspal.ops.state.v1";
-  const GS_URL = "https://script.google.com/macros/s/AKfycbybLKFVW5AlO6I8Avp9iN_E1NfmGBnSUQwlASHwaSH0o3Qtk6XDH5AUOH6Aixrhy8AaAw/exec";
+  const SUPABASE_URL = "https://zbtcwzpdhjxjemxbepsx.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_Yfa0hk8bdoB6g5zc-r1nTQ_CXT5wg1Z";
+  const TABLE = "app_state";
+  const STATE_KEY = "salpal_state";
 
-  // ── GOOGLE SHEETS SYNC ────────────────────────────────────────────────
+  // ── SUPABASE SYNC ─────────────────────────────────────────────────────
   let syncTimeout = null;
-  let syncStatus = "idle";
 
   const notifySyncStatus = (status, msg) => {
-    syncStatus = status;
     window.dispatchEvent(new CustomEvent("wmspal:sync-status", { detail: { status, msg } }));
   };
 
-  const syncToSheets = (state) => {
+  const sbHeaders = () => ({
+    "Content-Type": "application/json",
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${SUPABASE_KEY}`,
+    "Prefer": "return=minimal",
+  });
+
+  const syncToSupabase = (state) => {
     clearTimeout(syncTimeout);
     syncTimeout = setTimeout(async () => {
       notifySyncStatus("syncing");
       try {
-        const res = await fetch(GS_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify({ action: "save", data: state }),
+        const value = JSON.stringify(state);
+        const now = new Date().toISOString();
+        // Upsert — insert or update based on key
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?key=eq.${STATE_KEY}`, {
+          method: "GET",
+          headers: sbHeaders(),
         });
-        const json = await res.json();
-        if (json.ok) notifySyncStatus("ok");
-        else notifySyncStatus("error", json.error);
+        const existing = await res.json();
+        if (existing.length > 0) {
+          // Update
+          await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?key=eq.${STATE_KEY}`, {
+            method: "PATCH",
+            headers: sbHeaders(),
+            body: JSON.stringify({ value, updated_at: now }),
+          });
+        } else {
+          // Insert
+          await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+            method: "POST",
+            headers: { ...sbHeaders(), "Prefer": "return=minimal" },
+            body: JSON.stringify({ key: STATE_KEY, value, updated_at: now }),
+          });
+        }
+        notifySyncStatus("ok");
       } catch (err) {
         notifySyncStatus("error", err.message);
       }
     }, 1500);
   };
 
-  const loadFromSheets = async () => {
+  const loadFromSupabase = async () => {
     try {
-      const res = await fetch(`${GS_URL}?action=load`, { method: "GET" });
-      const json = await res.json();
-      if (json.data) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data));
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?key=eq.${STATE_KEY}&select=value`, {
+        method: "GET",
+        headers: sbHeaders(),
+      });
+      const rows = await res.json();
+      if (rows && rows.length > 0 && rows[0].value) {
+        const data = JSON.parse(rows[0].value);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         notifySyncStatus("ok");
-        return json.data;
+        return data;
       }
     } catch (err) {
       notifySyncStatus("error", err.message);
@@ -140,7 +168,7 @@
 
   const saveState = (state) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    syncToSheets(state);
+    syncToSupabase(state);
     window.dispatchEvent(new CustomEvent("wmspal:state-saved"));
   };
 
@@ -243,6 +271,6 @@
     loadState, saveState, makeId, makeAwb, clone, nowStamp,
     getUserName, getDrivers, getAdmins, formatDate, formatDateTime,
     addressLine, describeTaskAddress, upsertTask, startTask, completeTask, syncCompanyToTasks,
-    loadFromSheets,
+    loadFromSheets: loadFromSupabase,
   };
 })();
