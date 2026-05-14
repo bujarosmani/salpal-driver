@@ -12,7 +12,10 @@
   const qsa = (sel) => Array.from(document.querySelectorAll(sel));
   const esc = (v) => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
   const persist = () => store.saveState(state);
-  const todayIso = () => new Date().toISOString().slice(0,10);
+  const todayIso = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  };
 
   const loginView = byId("loginView");
   const loginForm = byId("loginForm");

@@ -26,7 +26,10 @@
   const closeModal = (d) => { if (d.open) d.close(); };
   const clearInvalid = (form) => form.querySelectorAll("[aria-invalid='true']").forEach((e)=>e.removeAttribute("aria-invalid"));
   const markInvalid = (ids) => ids.forEach((id)=>{ const e=byId(id); if(e) e.setAttribute("aria-invalid","true"); });
-  const todayIso = () => new Date().toISOString().slice(0,10);
+  const todayIso = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  };
   const persist = () => store.saveState(state);
 
   const currentAdminId = () => {
