@@ -1,7 +1,7 @@
 (function () {
   const STORAGE_KEY = "wmspal.ops.state.v1";
   const SUPABASE_URL = "https://zbtcwzpdhjxjemxbepsx.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_Yfa0hk8bdoB6g5zc-r1nTQ_CXT5wg1Z";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpidGN3enBkaGp4amVteGJlcHN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3ODgyMjMsImV4cCI6MjA5NDM2NDIyM30.RI9ZrfLCWJRl6sXKq44GN2Gio09VB9amnkyvlGGAAmU";
   const TABLE = "app_state";
   const STATE_KEY = "salpal_state";
 
@@ -39,10 +39,12 @@
         if (res.ok || res.status === 201 || res.status === 204) {
           notifySyncStatus("ok");
         } else {
-          const err = await res.text();
-          notifySyncStatus("error", err);
+          const errText = await res.text();
+          console.error("Supabase save error:", res.status, errText);
+          notifySyncStatus("error", `${res.status}: ${errText}`);
         }
       } catch (err) {
+        console.error("Supabase sync error:", err);
         notifySyncStatus("error", err.message);
       }
     }, 1500);
