@@ -303,16 +303,21 @@
   window.addEventListener("touchend",stopDraw);
 
   clearSignature();
+  // Listen for sync status on driver app
+  window.addEventListener("wmspal:sync-status", (e) => {
+    const { status } = e.detail;
+    if(status === "error") {
+      // Show a brief error toast
+      const toast = document.createElement("div");
+      toast.textContent = "⚠ Could not sync — check connection";
+      toast.style.cssText = "position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#b42318;color:#fff;padding:0.6rem 1rem;border-radius:8px;font-size:0.84rem;font-weight:700;z-index:999;";
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+  });
   // Load latest data from Google Sheets before showing login
   store.loadFromSheets().then((cloudData) => {
     if(cloudData) state = store.loadState();
     showLogin();
   }).catch(() => showLogin());
-  // Auto-refresh from Sheets every 60 seconds when logged in
-  setInterval(() => {
-    if(!loggedInDriverId) return;
-    store.loadFromSheets().then((cloudData) => {
-      if(cloudData){ state = store.loadState(); }
-    });
-  }, 60000);
 })();

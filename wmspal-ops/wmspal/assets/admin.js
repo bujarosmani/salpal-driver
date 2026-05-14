@@ -966,7 +966,6 @@
   try {
     bindEvents();
     renderAll();
-    // Load latest data from Google Sheets on startup
     const syncEl = byId("syncIndicator");
     if(syncEl) {
       syncEl.textContent = "⟳ Loading...";
@@ -983,16 +982,9 @@
     store.loadFromSheets().then((cloudData) => {
       if(cloudData){ state = store.loadState(); renderAll(); }
     });
-    // Auto-refresh from Sheets every 30 seconds
-    setInterval(() => {
-      store.loadFromSheets().then((cloudData) => {
-        if(cloudData){ state = store.loadState(); renderAll(); }
-      });
-    }, 30000);
-    // Listen for sync status updates
     window.addEventListener("wmspal:sync-status", (e) => {
       if(!syncEl) return;
-      const { status, msg } = e.detail;
+      const { status } = e.detail;
       syncEl.className = `sync-indicator ${status}`;
       if(status === "syncing") syncEl.textContent = "⟳ Saving...";
       else if(status === "ok") syncEl.textContent = "✓ Synced · click to refresh";
