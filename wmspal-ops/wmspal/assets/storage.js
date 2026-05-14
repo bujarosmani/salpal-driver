@@ -26,28 +26,22 @@
       try {
         const value = JSON.stringify(state);
         const now = new Date().toISOString();
-        // Upsert — insert or update based on key
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?key=eq.${STATE_KEY}`, {
-          method: "GET",
-          headers: sbHeaders(),
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Prefer": "resolution=merge-duplicates,return=minimal",
+          },
+          body: JSON.stringify({ key: STATE_KEY, value, updated_at: now }),
         });
-        const existing = await res.json();
-        if (existing.length > 0) {
-          // Update
-          await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?key=eq.${STATE_KEY}`, {
-            method: "PATCH",
-            headers: sbHeaders(),
-            body: JSON.stringify({ value, updated_at: now }),
-          });
+        if (res.ok || res.status === 201 || res.status === 204) {
+          notifySyncStatus("ok");
         } else {
-          // Insert
-          await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
-            method: "POST",
-            headers: { ...sbHeaders(), "Prefer": "return=minimal" },
-            body: JSON.stringify({ key: STATE_KEY, value, updated_at: now }),
-          });
+          const err = await res.text();
+          notifySyncStatus("error", err);
         }
-        notifySyncStatus("ok");
       } catch (err) {
         notifySyncStatus("error", err.message);
       }
