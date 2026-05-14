@@ -951,7 +951,18 @@
       const v=e.target.closest("[data-view-task]"); const ed=e.target.closest("[data-edit-task]"); const dl=e.target.closest("[data-delete-task]");
       if(v) viewTask(v.dataset.viewTask); if(ed) editTask(ed.dataset.editTask); if(dl) deleteTask(dl.dataset.deleteTask);
     });
-    byId("tasksTable").addEventListener("change",(e)=>{ const a=e.target.closest("[data-assign-task]"); if(a) assignTask(a.dataset.assignTask,a.value); });
+    byId("tasksTable").addEventListener("change",(e)=>{
+      const a=e.target.closest("[data-assign-task]");
+      if(a){ assignTask(a.dataset.assignTask, a.value); return; }
+      const sc=e.target.closest("[data-change-status]");
+      if(sc){
+        const t=state.tasks.find((x)=>x.id===sc.dataset.changeStatus); if(!t) return;
+        const updated = {...t, status: sc.value};
+        store.upsertTask(state, updated, currentAdminId());
+        persist(); renderAll();
+        if(activeSection==="calendar") renderCalendar();
+      }
+    });
 
     // Date picker OK button
     byId("datePickerOk").addEventListener("click",()=>{
