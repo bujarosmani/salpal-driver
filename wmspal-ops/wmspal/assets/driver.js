@@ -308,4 +308,11 @@
     if(cloudData) state = store.loadState();
     showLogin();
   }).catch(() => showLogin());
+  // Auto-refresh from Sheets every 60 seconds when logged in
+  setInterval(() => {
+    if(!loggedInDriverId) return;
+    store.loadFromSheets().then((cloudData) => {
+      if(cloudData){ state = store.loadState(); }
+    });
+  }, 60000);
 })();

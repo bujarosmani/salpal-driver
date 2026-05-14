@@ -968,18 +968,35 @@
     renderAll();
     // Load latest data from Google Sheets on startup
     const syncEl = byId("syncIndicator");
-    if(syncEl) syncEl.textContent = "⟳ Loading...";
+    if(syncEl) {
+      syncEl.textContent = "⟳ Loading...";
+      syncEl.style.cursor = "pointer";
+      syncEl.title = "Click to refresh from Google Sheets";
+      syncEl.addEventListener("click", () => {
+        syncEl.textContent = "⟳ Refreshing...";
+        syncEl.className = "sync-indicator syncing";
+        store.loadFromSheets().then((cloudData) => {
+          if(cloudData){ state = store.loadState(); renderAll(); }
+        });
+      });
+    }
     store.loadFromSheets().then((cloudData) => {
       if(cloudData){ state = store.loadState(); renderAll(); }
     });
+    // Auto-refresh from Sheets every 30 seconds
+    setInterval(() => {
+      store.loadFromSheets().then((cloudData) => {
+        if(cloudData){ state = store.loadState(); renderAll(); }
+      });
+    }, 30000);
     // Listen for sync status updates
     window.addEventListener("wmspal:sync-status", (e) => {
       if(!syncEl) return;
       const { status, msg } = e.detail;
       syncEl.className = `sync-indicator ${status}`;
       if(status === "syncing") syncEl.textContent = "⟳ Saving...";
-      else if(status === "ok") syncEl.textContent = "✓ Saved to Sheets";
-      else if(status === "error") syncEl.textContent = "⚠ Sync error";
+      else if(status === "ok") syncEl.textContent = "✓ Synced · click to refresh";
+      else if(status === "error") syncEl.textContent = "⚠ Sync error · click to retry";
     });
   } catch(e) { console.error("WMSPal init error:", e); }
 })();
