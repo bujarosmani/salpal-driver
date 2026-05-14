@@ -7,7 +7,7 @@
   let calRangeFrom = "";
   let calRangeTo = "";
   let calSelectedDrivers = null;
-  let calMonthValue = new Date().toISOString().slice(0, 7);
+  let calMonthValue = (() => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
 
   // Sort state per table: { col, dir } dir = 'asc'|'desc'
   let sortState = { users: { col: "firstName", dir: "asc" }, companies: { col: "name", dir: "asc" }, tasks: { col: "awb", dir: "desc" } };
@@ -30,6 +30,7 @@
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   };
+  const localIso = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const persist = () => store.saveState(state);
 
   const currentAdminId = () => {
@@ -359,13 +360,13 @@
   let pickerCallback = null;
   let pickerFrom = "";
   let pickerTo = "";
-  let pickerViewMonth = new Date().toISOString().slice(0,7); // YYYY-MM
+  let pickerViewMonth = (() => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
 
   const openDatePicker = (currentFrom, currentTo, callback) => {
     pickerCallback = callback;
     pickerFrom = currentFrom;
     pickerTo = currentTo;
-    pickerViewMonth = currentFrom ? currentFrom.slice(0,7) : new Date().toISOString().slice(0,7);
+    pickerViewMonth = currentFrom ? currentFrom.slice(0,7) : (() => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
     renderDatePicker();
     openModal(byId("datePickerDialog"));
   };
@@ -467,13 +468,13 @@
     // presets
     container.querySelectorAll("[data-preset]").forEach((btn)=>{
       btn.addEventListener("click",()=>{
-        const today=new Date().toISOString().slice(0,10);
+        const today=todayIso();
         const p=btn.dataset.preset;
         if(p==="today"){pickerFrom=today;pickerTo=today;}
-        else if(p==="yesterday"){const d=new Date();d.setDate(d.getDate()-1);const iso=d.toISOString().slice(0,10);pickerFrom=iso;pickerTo=iso;}
-        else if(p==="tomorrow"){const d=new Date();d.setDate(d.getDate()+1);const iso=d.toISOString().slice(0,10);pickerFrom=iso;pickerTo=iso;}
-        else if(p==="week"){const d=new Date();d.setDate(d.getDate()+6);pickerFrom=today;pickerTo=d.toISOString().slice(0,10);}
-        else if(p==="month"){const d=new Date();const last=new Date(d.getFullYear(),d.getMonth()+1,0);pickerFrom=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`;pickerTo=last.toISOString().slice(0,10);}
+        else if(p==="yesterday"){const d=new Date();d.setDate(d.getDate()-1);const iso=localIso(d);pickerFrom=iso;pickerTo=iso;}
+        else if(p==="tomorrow"){const d=new Date();d.setDate(d.getDate()+1);const iso=localIso(d);pickerFrom=iso;pickerTo=iso;}
+        else if(p==="week"){const d=new Date();d.setDate(d.getDate()+6);pickerFrom=today;pickerTo=localIso(d);}
+        else if(p==="month"){const d=new Date();const last=new Date(d.getFullYear(),d.getMonth()+1,0);pickerFrom=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`;pickerTo=localIso(last);}
         else if(p==="all"){pickerFrom="";pickerTo="";}
         renderDatePicker();
       });
@@ -801,9 +802,9 @@
 
   // ── CALENDAR ──────────────────────────────────────────────────────────
   const renderCalendar = () => {
-    const todayStr = new Date().toISOString().slice(0,10);
+    const todayStr = todayIso();
     const from = calRangeFrom || (() => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`; })();
-    const to = calRangeTo || (() => { const d=new Date(); const last=new Date(d.getFullYear(),d.getMonth()+1,0); return last.toISOString().slice(0,10); })();
+    const to = calRangeTo || (() => { const d=new Date(); const last=new Date(d.getFullYear(),d.getMonth()+1,0); return localIso(last); })();
     const allDrivers = store.getDrivers(state);
     const selectedDrivers = calSelectedDrivers ? allDrivers.filter((d)=>calSelectedDrivers.includes(d.id)) : allDrivers;
     // Only show drivers who have at least one task in the date range
@@ -838,7 +839,7 @@
 
     const getDates = (f, t) => {
       const dates=[]; const cur=new Date(f); const end=new Date(t);
-      while(cur<=end){dates.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
+      while(cur<=end){dates.push(localIso(cur));cur.setDate(cur.getDate()+1);}
       return dates;
     };
     const dates = getDates(from, to);
@@ -996,6 +997,12 @@
     store.loadFromSheets().then((cloudData) => {
       if(cloudData){ state = store.loadState(); renderAll(); }
     });
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+      store.loadFromSheets().then((cloudData) => {
+        if(cloudData){ state = store.loadState(); renderAll(); }
+      });
+    }, 30000);
     window.addEventListener("wmspal:sync-status", (e) => {
       if(!syncEl) return;
       const { status } = e.detail;
