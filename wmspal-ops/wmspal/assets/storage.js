@@ -12,13 +12,6 @@
     window.dispatchEvent(new CustomEvent("wmspal:sync-status", { detail: { status, msg } }));
   };
 
-  const sbHeaders = () => ({
-    "Content-Type": "application/json",
-    "apikey": SUPABASE_KEY,
-    "Authorization": `Bearer ${SUPABASE_KEY}`,
-    "Prefer": "return=minimal",
-  });
-
   const syncToSupabase = (state) => {
     clearTimeout(syncTimeout);
     syncTimeout = setTimeout(async () => {
@@ -52,10 +45,19 @@
 
   const loadFromSupabase = async () => {
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?key=eq.${STATE_KEY}&select=value`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?key=eq.${STATE_KEY}&select=value,updated_at`, {
         method: "GET",
-        headers: sbHeaders(),
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+        },
       });
+      if (!res.ok) {
+        const err = await res.text();
+        console.error("Supabase load error:", res.status, err);
+        notifySyncStatus("error");
+        return null;
+      }
       const rows = await res.json();
       if (rows && rows.length > 0 && rows[0].value) {
         const data = JSON.parse(rows[0].value);
@@ -64,6 +66,7 @@
         return data;
       }
     } catch (err) {
+      console.error("Supabase load error:", err);
       notifySyncStatus("error", err.message);
     }
     return null;
