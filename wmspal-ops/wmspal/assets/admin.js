@@ -775,8 +775,11 @@
   // ── EXCEL EXPORT ──────────────────────────────────────────────────────
   const exportTasksToExcel = () => {
     let tasks = state.tasks.filter((t) => {
-      const mDriver = !taskDriverFilter || t.driverId === taskDriverFilter;
-      const mStatus = taskStatusFilter === "All" || t.status === taskStatusFilter;
+      const allDriverIds = store.getDrivers(state).map((d)=>d.id);
+      const activeDrivers = taskSelectedDrivers === null ? allDriverIds : taskSelectedDrivers;
+      const activeStatuses = taskSelectedStatuses === null ? ["Open","In Progress","Completed"] : taskSelectedStatuses;
+      const mDriver = activeDrivers.includes(t.driverId) || (!t.driverId && activeDrivers.length === allDriverIds.length);
+      const mStatus = activeStatuses.includes(t.status);
       const mDate = (!taskDateFrom && !taskDateTo) ||
         (taskDateFrom && taskDateTo ? t.deliveryDate >= taskDateFrom && t.deliveryDate <= taskDateTo :
          taskDateFrom ? t.deliveryDate === taskDateFrom : true);
